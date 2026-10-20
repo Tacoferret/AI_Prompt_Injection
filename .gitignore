@@ -1,0 +1,5 @@
+.env
+results/run_*/
+results/dryrun_*/
+__pycache__/
+*.pyc
