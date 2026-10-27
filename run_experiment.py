@@ -33,13 +33,15 @@ def main():
     ap.add_argument("--limit", type=int, default=None, help="only run the first N trials (smoke test)")
     ap.add_argument("--mode", choices=["forced", "free"], default=config.AGENT_MODE,
                     help="forced = harness always runs search then read_document; free = model picks tools")
+    ap.add_argument("--dataset", default=config.DATASET_PATH,
+                    help="dataset JSONL (default: baseline). e.g. data/injection_location_dataset_override_o1_important_ignore.jsonl")
     ap.add_argument("--no-report", action="store_true")
     a = ap.parse_args()
     if a.model is None:
         a.model = config.MODEL if a.backend == "openai" else config.OLLAMA_MODEL
 
     conditions = set(a.conditions.split(","))
-    recs = [json.loads(l) for l in open(config.DATASET_PATH, encoding="utf-8") if l.strip()]
+    recs = [json.loads(l) for l in open(a.dataset, encoding="utf-8") if l.strip()]
     recs = [r for r in recs if r["condition"] in conditions]
     trials = [(rep, r) for rep in range(a.repeats) for r in recs]
     random.Random(config.SEED).shuffle(trials)
@@ -48,7 +50,8 @@ def main():
 
     model_name = "mock" if a.dry_run else a.model
     run_dir = Path(config.RESULTS_DIR) / (("dryrun_" if a.dry_run else "run_")
-                                           + datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + model_name.replace("/", "-").replace(":", "-"))
+                                           + datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + model_name.replace("/", "-").replace(":", "-")
+                                           + ("" if a.dataset == config.DATASET_PATH else "_" + Path(a.dataset).stem.replace("injection_location_dataset_", "")))
     run_dir.mkdir(parents=True, exist_ok=True)
 
     if a.dry_run:
